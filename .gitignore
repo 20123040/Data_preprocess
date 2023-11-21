@@ -1,4 +1,5 @@
 *.csv
+*.json
 *.zip
 *.pdf
 *.tar.gz
@@ -6,4 +7,5 @@ EDM2023-CUP/edm-cup-2023
 EdNet/content
 EdNet/KT1
 XES3G5M/XES3G5M
+Assist19-20/2019-2020_school_year
 AAAI2023

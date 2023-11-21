@@ -3,32 +3,29 @@ import pandas as pd
 from tqdm import tqdm
 
 def run(config):
-    data_response = pd.read_csv('EDM2023-CUP/edm-cup-2023/training_unit_test_scores.csv')
-    data_assignment = pd.read_csv('EDM2023-CUP/edm-cup-2023/assignment_details.csv')
-    q_data = pd.read_csv('EDM2023-CUP/edm-cup-2023/problem_details.csv')
-    
+    data_response = pd.read_csv('Assist19-20/2019-2020_school_year/plogs.csv')
+    q_data = pd.read_csv('Assist19-20/2019-2020_school_year/pdets.csv')
+
+    data_response = data_response.dropna(subset=['correct'])
+    q_data = q_data.dropna(subset=['skills'])
+    data_response = data_response.loc[data_response['problem_id'].isin(q_data['problem_id'].unique())]
+
     response_data = dict()
-    stu_response_data = dict()
-    stu_num = np.random.choice(np.arange(27178), size=config["stu_num"], replace=False)
+    stu_response_data = dict() 
+    stu_num = np.random.choice(np.arange(163097), size=config["stu_num"], replace=False)
     least_respone_num = config["least_respone_num"]
     original_stu_map = dict()
     original_cnt_stu = 0
-    data_response = data_response.loc[data_response["problem_id"].isin(q_data["problem_id"].unique())]
-    data_assignment = data_assignment.loc[data_assignment["assignment_log_id"].isin(data_response["assignment_log_id"].unique())]
-        
 
-    for stu in data_assignment["student_id"].unique():
+    for stu in data_response["student_id"].unique():
         original_stu_map[original_cnt_stu] = stu
         original_cnt_stu += 1
     
     for stu in tqdm(stu_num, desc='Filter student'):
-        stu_data = data_assignment.loc[data_assignment["student_id"] == original_stu_map[stu]]
-        for assignment in stu_data["assignment_log_id"]:
-            assignment_data = data_response.loc[data_response["assignment_log_id"] == assignment]
-            for data in assignment_data.values:
-                if q_data.loc[q_data["problem_id"] == data[1]]["problem_type"].iloc[0] != "Ungraded Open Response":
-                    tmp_data = (stu, data[1])
-                    response_data[tmp_data] = data[2]
+        stu_data = data_response.loc[data_response["student_id"] == original_stu_map[stu]]
+        for data in stu_data.values:
+            tmp_data = (stu, data[3])
+            response_data[tmp_data] = (data[11] == True)
 
     for key, value in response_data.items():
         if key[0] not in stu_response_data:
@@ -51,7 +48,8 @@ def run(config):
             cnt_stu += 1
             for data in value:
                 question_set.add(data[1])
-                concept_set.add(q_data.loc[q_data["problem_id"] == data[1]]['problem_skill_code'].iloc[0])
+                for concept in q_data.loc[q_data["problem_id"] == data[1]]['skills'].iloc[0].split(','):
+                    concept_set.add(concept)
 
 
     for question in question_set:
@@ -69,9 +67,9 @@ def run(config):
         if len(value) >= least_respone_num:
             for data in value:
                 TotalData.append([stu_map[data[0]], question_map[data[1]], data[2]])
-                q_matrix[question_map[data[1]]][concept_map[q_data.loc[q_data["problem_id"] == data[1]]['problem_skill_code'].iloc[0]]] = 1
-
+                for concept in q_data.loc[q_data["problem_id"] == data[1]]['skills'].iloc[0].split(','):
+                    q_matrix[question_map[data[1]]][concept_map[concept]] = 1
 
     print('Final student number: {}, Final question number: {}, Final concept number: {}, Final response number: {}'.format(cnt_stu, cnt_question, cnt_concept, len(TotalData)))
-    np.savetxt('EDM2023-CUP/EDM2023-CUP_TotalData.csv', TotalData, delimiter=',')
-    np.savetxt('EDM2023-CUP/EDM2023-CUP_q.csv', q_matrix, delimiter=',')
+    np.savetxt('Assist19-20/Assist19-20_TotalData.csv', TotalData, delimiter=',')
+    np.savetxt('Assist19-20/Assist19-20_q.csv', q_matrix, delimiter=',')
